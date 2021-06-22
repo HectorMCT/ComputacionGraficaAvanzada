@@ -47,6 +47,7 @@ Shader shader;
 Shader shaderSkybox;
 //Shader con multiples luces
 Shader shaderMulLighting;
+Shader shaderMutLighting_mt;
 
 std::shared_ptr<FirstPersonCamera> camera(new FirstPersonCamera());
 
@@ -56,6 +57,8 @@ Box boxCesped;
 Box boxWalls;
 Box boxHighway;
 Box boxLandingPad;
+//Cubo chido
+Box cuboDobleText;
 // Models complex instances
 Model modelRock;
 Model modelAircraft;
@@ -87,7 +90,7 @@ Model modelDartLegoRightLeg;
 Model modelMiddelEastBuilding;
 Model modelIslamicMosque;
 
-GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
+GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID, textureSpongeID, textureWaterID;
 GLuint skyboxTextureID;
 
 GLenum types[6] = {
@@ -227,6 +230,8 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	shader.initialize("../Shaders/colorShader.vs", "../Shaders/colorShader.fs");
 	shaderSkybox.initialize("../Shaders/skyBox.vs", "../Shaders/skyBox.fs");
 	shaderMulLighting.initialize("../Shaders/iluminacion_texture_res.vs", "../Shaders/multipleLights.fs");
+	shaderMutLighting_mt.initialize("../Shaders/iluminacion_texture_res.vs", "../Shaders/multipleLights_ejercicio_mt.fs");
+
 
 	// Inicializacion de los objetos.
 	skyboxSphere.init();
@@ -237,6 +242,9 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	esfera1.setShader(&shaderMulLighting);
 	esfera1.setScale(glm::vec3(5.0, 5.0, 5.0));
 	esfera1.setPosition(glm::vec3(1.0, 4.0, -6.0));
+
+	cuboDobleText.init();
+	cuboDobleText.setShader(&shaderMutLighting_mt);
 
 	boxCesped.init();
 	boxCesped.setShader(&shaderMulLighting);
@@ -263,6 +271,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	modelEclipseFrontalWheels.setShader(&shaderMulLighting);
 	modelEclipseRearWheels.loadModel("../models/Eclipse/2003eclipse_rear_wheels.obj");
 	modelEclipseRearWheels.setShader(&shaderMulLighting);
+
 	// Helicopter
 	modelHeliChasis.loadModel("../models/Helicopter/Mi_24_chasis.obj");
 	modelHeliChasis.setShader(&shaderMulLighting);
@@ -270,6 +279,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	modelHeliHeli.setShader(&shaderMulLighting);
 	modelHeliRearHeli.loadModel("../models/Helicopter/Mi_24_rear_heli.obj");
 	modelHeliRearHeli.setShader(&shaderMulLighting);
+	
 	// Lamborginhi
 	modelLambo.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_chasis.obj");
 	modelLambo.setShader(&shaderMulLighting);
@@ -505,6 +515,74 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	//Liberar memoria de la textura
 	textureLandingPad.freeImage(bitmap);
 
+
+	// Definiendo la textura a utilizar
+	Texture textureSponge("../Textures/sponge.jpg");
+	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
+	bitmap = textureSponge.loadImage();
+	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
+	data = textureSponge.convertToData(bitmap, imageWidth,
+		imageHeight);
+	// Creando la textura con id 1
+	glGenTextures(1, &textureSpongeID);
+	// Enlazar esa textura a una tipo de textura de 2D.
+	glBindTexture(GL_TEXTURE_2D, textureSpongeID);
+	// set the texture wrapping parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // set texture wrapping to GL_REPEAT (default wrapping method)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Verifica si se pudo abrir la textura
+	if (data) {
+		// Transferis los datos de la imagen a memoria
+		// Tipo de textura, Mipmaps, Formato interno de openGL, ancho, alto, Mipmaps,
+		// Formato interno de la libreria de la imagen, el tipo de dato y al apuntador
+		// a los datos
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0,
+			GL_BGRA, GL_UNSIGNED_BYTE, data);
+		// Generan los niveles del mipmap (OpenGL es el ecargado de realizarlos)
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+		std::cout << "Failed to load texture" << std::endl;
+	// Libera la memoria de la textura
+	textureSponge.freeImage(bitmap);
+
+
+	// Definiendo la textura a utilizar
+	Texture textureWater("../Textures/water.jpg");
+	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
+	bitmap = textureWater.loadImage();
+	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
+	data = textureWater.convertToData(bitmap, imageWidth,
+		imageHeight);
+	// Creando la textura con id 1
+	glGenTextures(1, &textureWaterID);
+	// Enlazar esa textura a una tipo de textura de 2D.
+	glBindTexture(GL_TEXTURE_2D, textureWaterID);
+	// set the texture wrapping parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // set texture wrapping to GL_REPEAT (default wrapping method)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Verifica si se pudo abrir la textura
+	if (data) {
+		// Transferis los datos de la imagen a memoria
+		// Tipo de textura, Mipmaps, Formato interno de openGL, ancho, alto, Mipmaps,
+		// Formato interno de la libreria de la imagen, el tipo de dato y al apuntador
+		// a los datos
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imageWidth, imageHeight, 0,
+			GL_BGRA, GL_UNSIGNED_BYTE, data);
+		// Generan los niveles del mipmap (OpenGL es el ecargado de realizarlos)
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+		std::cout << "Failed to load texture" << std::endl;
+	// Libera la memoria de la textura
+	textureWater.freeImage(bitmap);
+
 }
 
 void destroy() {
@@ -524,6 +602,7 @@ void destroy() {
 	boxWalls.destroy();
 	boxHighway.destroy();
 	boxLandingPad.destroy();
+	cuboDobleText.destroy();
 
 	// Custom objects Delete
 	modelAircraft.destroy();
@@ -797,6 +876,12 @@ void applicationLoop() {
 			glm::value_ptr(projection));
 		shaderMulLighting.setMatrix4("view", 1, false,
 			glm::value_ptr(view));
+		// Settea la matriz de vista y projection al nuevo shader
+		shaderMutLighting_mt.setMatrix4("projection", 1, false,
+			glm::value_ptr(projection));
+		shaderMutLighting_mt.setMatrix4("view", 1, false,
+			glm::value_ptr(view));
+
 
 		/*******************************************
 		 * Propiedades Luz direccional
@@ -808,14 +893,25 @@ void applicationLoop() {
 		shaderMulLighting.setVectorFloat3("directionalLight.direction", glm::value_ptr(glm::vec3(-1.0, 0.0, 0.0)));
 
 		/*******************************************
+		 * Propiedades Luz direccional
+		 *******************************************/
+		shaderMutLighting_mt.setVectorFloat3("viewPos", glm::value_ptr(camera->getPosition()));
+		shaderMutLighting_mt.setVectorFloat3("directionalLight.light.ambient", glm::value_ptr(glm::vec3(0.3, 0.3, 0.3)));
+		shaderMutLighting_mt.setVectorFloat3("directionalLight.light.diffuse", glm::value_ptr(glm::vec3(0.7, 0.7, 0.7)));
+		shaderMutLighting_mt.setVectorFloat3("directionalLight.light.specular", glm::value_ptr(glm::vec3(0.9, 0.9, 0.9)));
+		shaderMutLighting_mt.setVectorFloat3("directionalLight.direction", glm::value_ptr(glm::vec3(-1.0, 0.0, 0.0)));
+
+		/*******************************************
 		 * Propiedades SpotLights
 		 *******************************************/
 		shaderMulLighting.setInt("spotLightCount", 0);
+		shaderMutLighting_mt.setInt("spotLightCount", 0);
 
 		/*******************************************
 		 * Propiedades PointLights
 		 *******************************************/
 		shaderMulLighting.setInt("pointLightCount", 0);
+		shaderMutLighting_mt.setInt("pointLightCount", 0);
 
 		/*******************************************
 		 * Cesped
@@ -922,6 +1018,18 @@ void applicationLoop() {
 		esfera1.setPosition(glm::vec3(7.0, 4.0, -6.0));
 		esfera1.render();
 		glBindTexture(GL_TEXTURE_2D, 0);
+
+		//*********************************
+		//Combinación de Textura de esponja y agua.
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textureSpongeID);
+		shaderMutLighting_mt.setInt("texture1",0);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textureWaterID);
+		shaderMutLighting_mt.setInt("texture2",1);
+		cuboDobleText.setScale(glm::vec3(1.0, 1.0, 1.0));
+		cuboDobleText.setPosition(glm::vec3(7.0, 7.0, 7.0));
+		cuboDobleText.render();
 
 		/*******************************************
 		 * Custom objects obj

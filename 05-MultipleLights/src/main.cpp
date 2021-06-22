@@ -81,6 +81,8 @@ Model modelDartLegoLeftLeg;
 Model modelDartLegoRightLeg;
 // Lamps
 Model modelLamp1;
+Model modelLamp2;
+Model modelLampPost2;
 // Model animate instance
 // Mayow
 Model mayowModelAnimate;
@@ -148,14 +150,18 @@ float rotHelHelY = 0.0;
 // Var animate lambo dor
 int stateDoor = 0;
 float dorRotCount = 0.0;
+float anguloY = 0.0;
 
 // Lamps positions
 std::vector<glm::vec3> lamp1Position = { glm::vec3(-7.03, 0, -19.14), glm::vec3(
-		24.41, 0, -34.57), glm::vec3(-10.15, 0, -54.10) };
-std::vector<float> lamp1Orientation = { -17.0, -82.67, 23.70 };
+		24.41, 0, -34.57), glm::vec3(-10.15, 0, -54.10), glm::vec3(14.06,0,-50.97) };
+std::vector<float> lamp1Orientation = { -17.0, -82.67, 23.70, -31.80 };
 std::vector<glm::vec3> lamp2Position = { glm::vec3(-36.52, 0, -23.24),
 		glm::vec3(-52.73, 0, -3.90) };
 std::vector<float> lamp2Orientation = {21.37 + 90, -65.0 + 90};
+
+std::vector<glm::vec3> faroPosition = { glm::vec3(0.7489, 0.6581, 2.31975),
+		 glm::vec3(-0.7489, 0.6581, 2.31975) };
 
 double deltaTime;
 double currTime, lastTime;
@@ -288,6 +294,10 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	//Lamp models
 	modelLamp1.loadModel("../models/Street-Lamp-Black/objLamp.obj");
 	modelLamp1.setShader(&shaderMulLighting);
+	modelLamp2.loadModel("../models/Street_Light/Lamp.obj");
+	modelLamp2.setShader(&shaderMulLighting);
+	modelLampPost2.loadModel("../models/Street_Light/LampPost.obj");
+	modelLampPost2.setShader(&shaderMulLighting);
 
 	//Mayow
 	mayowModelAnimate.loadModel("../models/mayow/personaje2.fbx");
@@ -485,7 +495,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureLandingPad.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainBackground("../Textures/grassy2.png");
+	Texture textureTerrainBackground("../Textures/snowGrassy.jpg");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainBackground.loadImage();
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -517,7 +527,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureTerrainBackground.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainR("../Textures/mud.png");
+	Texture textureTerrainR("../Textures/snowTexture.jpg");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainR.loadImage();
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -549,7 +559,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureTerrainR.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainG("../Textures/grassFlowers.png");
+	Texture textureTerrainG("../Textures/grassSnow.jpg");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainG.loadImage();
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -581,7 +591,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureTerrainG.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainB("../Textures/path.png");
+	Texture textureTerrainB("../Textures/pathTexture.jpg");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainB.loadImage();
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -613,7 +623,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureTerrainB.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainBlendMap("../Textures/blendMap.png");
+	Texture textureTerrainBlendMap("../Textures/blendMap_N.png");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainBlendMap.loadImage(true);
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -685,6 +695,8 @@ void destroy() {
 	modelLamboRightDor.destroy();
 	modelRock.destroy();
 	modelLamp1.destroy();
+	modelLamp2.destroy();
+	modelLampPost2.destroy();
 
 	// Custom objects animate
 	mayowModelAnimate.destroy();
@@ -770,7 +782,7 @@ bool processInput(bool continueApplication) {
 	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS){
 		enableCountSelected = false;
 		modelSelected++;
-		if(modelSelected > 2)
+		if(modelSelected > 3)
 			modelSelected = 0;
 		if(modelSelected == 1)
 			fileName = "../animaciones/animation_dart_joints.txt";
@@ -855,6 +867,27 @@ bool processInput(bool continueApplication) {
 		modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(-0.02, 0.0, 0.0));
 	else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(0.02, 0.0, 0.0));
+
+	// Rotación a la izquierda y rotación hacia donde se avanza
+	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+		anguloY += 0.5f;
+	} // Rotación a la derecha y rotación hacia donde se retrocede
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		anguloY -= 0.5f;
+	} //Desplazamiento hacia en frente
+	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		modelMatrixLambo = glm::rotate(modelMatrixLambo, glm::radians(anguloY), glm::vec3(0, 1, 0));
+		modelMatrixLambo = glm::translate(modelMatrixLambo, glm::vec3(0.0, 0.0, 0.02));
+		modelMatrixLambo = glm::rotate(modelMatrixLambo, glm::radians(anguloY), glm::vec3(0, -1, 0));
+	} //Desplazamiento hacia atras
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		modelMatrixLambo = glm::rotate(modelMatrixLambo, glm::radians(anguloY), glm::vec3(0, 1, 0));
+		modelMatrixLambo = glm::translate(modelMatrixLambo, glm::vec3(0.0, 0.0, -0.02));
+		modelMatrixLambo = glm::rotate(modelMatrixLambo, glm::radians(anguloY), glm::vec3(0, -1, 0));
+	}
+	else {
+		//animeIndexEva = 0;
+	}
 
 	glfwPollEvents();
 	return continueApplication;
@@ -944,8 +977,37 @@ void applicationLoop() {
 		/*******************************************
 		 * Propiedades PointLights
 		 *******************************************/
-		shaderMulLighting.setInt("pointLightCount", lamp1Position.size());
-		shaderTerrain.setInt("pointLightCount", lamp1Position.size());
+		/*glm::vec3 spotPosition = glm::vec3(modelMatrixHeli * glm::vec4(0.0, 0.2252, 1.6831, 1.0));
+		shaderMulLighting.setInt("spotLightCount", 1);
+		shaderTerrain.setInt("spotLightCount", 1);
+		shaderMulLighting.setVectorFloat3("spotLights[0].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
+		shaderMulLighting.setVectorFloat3("spotLights[0].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.2)));
+		shaderMulLighting.setVectorFloat3("spotLights[0].light.specular", glm::value_ptr(glm::vec3(0.3, 0.5, 0.3)));
+		shaderMulLighting.setVectorFloat3("spotLights[0].position", glm::value_ptr(spotPosition));
+		shaderMulLighting.setVectorFloat3("spotLights[0].direction", glm::value_ptr(glm::vec3(0, -1, 0)));
+		shaderMulLighting.setFloat("spotLights[0].constant", 1);
+		shaderMulLighting.setFloat("spotLights[0].linear", 0.074);
+		shaderMulLighting.setFloat("spotLights[0].quadratic", 0.03);
+		shaderMulLighting.setFloat("spotLights[0].cutOff", cos(glm::radians(12.5)));
+		shaderMulLighting.setFloat("spotLights[0].outerCutOff", cos(glm::radians(15.0)));
+
+		shaderTerrain.setVectorFloat3("spotLights[0].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
+		shaderTerrain.setVectorFloat3("spotLights[0].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.2)));
+		shaderTerrain.setVectorFloat3("spotLights[0].light.specular", glm::value_ptr(glm::vec3(0.3, 0.5, 0.3)));
+		shaderTerrain.setVectorFloat3("spotLights[0].position", glm::value_ptr(spotPosition));
+		shaderTerrain.setVectorFloat3("spotLights[0].direction", glm::value_ptr(glm::vec3(0, -1, 0)));
+		shaderTerrain.setFloat("spotLights[0].constant", 1);
+		shaderTerrain.setFloat("spotLights[0].linear", 0.074);
+		shaderTerrain.setFloat("spotLights[0].quadratic", 0.03);
+		shaderTerrain.setFloat("spotLights[0].cutOff", cos(glm::radians(12.5)));
+		shaderTerrain.setFloat("spotLights[0].outerCutOff", cos(glm::radians(15.0)));*/
+
+
+		/*******************************************
+		 * Propiedades PointLights
+		 *******************************************/
+		shaderMulLighting.setInt("pointLightCount", lamp1Position.size() + lamp2Position.size());
+		shaderTerrain.setInt("pointLightCount", lamp1Position.size() + lamp2Position.size());
 		for (int i = 0; i < lamp1Position.size(); i++){
 			glm::mat4 matrixAdjustLamp = glm::mat4(1.0f);
 			matrixAdjustLamp = glm::translate(matrixAdjustLamp, lamp1Position[i]);
@@ -967,6 +1029,30 @@ void applicationLoop() {
 			shaderTerrain.setFloat("pointLights[" + std::to_string(i) + "].constant", 1.0);
 			shaderTerrain.setFloat("pointLights[" + std::to_string(i) + "].linear", 0.09);
 			shaderTerrain.setFloat("pointLights[" + std::to_string(i) + "].quadratic", 0.02);
+		}
+
+		for (int i = 0; i < lamp2Position.size(); i++) {
+			glm::mat4 matrixAdjustLamp = glm::mat4(1.0f);
+			matrixAdjustLamp = glm::translate(matrixAdjustLamp, lamp2Position[i]);
+			matrixAdjustLamp = glm::rotate(matrixAdjustLamp, glm::radians(lamp2Orientation[i]), glm::vec3(0, 1, 0));
+			matrixAdjustLamp = glm::scale(matrixAdjustLamp, glm::vec3(1.0, 1.0, 1.0));
+			matrixAdjustLamp = glm::translate(matrixAdjustLamp, glm::vec3(0.772, 4.99, 0));
+			glm::vec3 lampPosition = glm::vec3(matrixAdjustLamp[3]);
+			shaderMulLighting.setVectorFloat3("pointLights[" + std::to_string(lamp1Position.size() + i) + "].light.ambient", glm::value_ptr(glm::vec3(0.2, 0.16, 0.01)));
+			shaderMulLighting.setVectorFloat3("pointLights[" + std::to_string(lamp1Position.size() + i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.4, 0.32, 0.02)));
+			shaderMulLighting.setVectorFloat3("pointLights[" + std::to_string(lamp1Position.size() + i) + "].light.specular", glm::value_ptr(glm::vec3(0.6, 0.58, 0.03)));
+			shaderMulLighting.setVectorFloat3("pointLights[" + std::to_string(lamp1Position.size() + i) + "].position", glm::value_ptr(lampPosition));
+			shaderMulLighting.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].constant", 1.0);
+			shaderMulLighting.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].linear", 0.9);
+			shaderMulLighting.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].quadratic", 0.1);
+
+			shaderTerrain.setVectorFloat3("pointLights[" + std::to_string(lamp1Position.size() + i) + "].light.ambient", glm::value_ptr(glm::vec3(0.2, 0.16, 0.01)));
+			shaderTerrain.setVectorFloat3("pointLights[" + std::to_string(lamp1Position.size() + i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.4, 0.32, 0.02)));
+			shaderTerrain.setVectorFloat3("pointLights[" + std::to_string(lamp1Position.size() + i) + "].light.specular", glm::value_ptr(glm::vec3(0.6, 0.58, 0.03)));
+			shaderTerrain.setVectorFloat3("pointLights[" + std::to_string(lamp1Position.size() + i) + "].position", glm::value_ptr(lampPosition));
+			shaderTerrain.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].constant", 1.0);
+			shaderTerrain.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].linear", 0.9);
+			shaderTerrain.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].quadratic", 0.1);
 		}
 
 		/*******************************************
@@ -1025,16 +1111,15 @@ void applicationLoop() {
 
 		// Lambo car
 		glDisable(GL_CULL_FACE);
+		modelMatrixLambo[3][1] = terrain.getHeightTerrain(modelMatrixLambo[3][0], modelMatrixLambo[3][2]);
 		glm::mat4 modelMatrixLamboChasis = glm::mat4(modelMatrixLambo);
-		modelMatrixLamboChasis[3][1] = terrain.getHeightTerrain(modelMatrixLamboChasis[3][0], modelMatrixLamboChasis[3][2]);
+		glm::vec3 normalY = terrain.getNormalTerrain(modelMatrixLambo[3][0], modelMatrixLambo[3][2]);
+		//float anguloRot = glm::acos(glm::dot(normalY, glm::vec3(0.0, 1.0, 0.0)) / (glm::length(normalY) * glm::length(glm::vec3(0.0, 1.0, 0.0))));
+		modelMatrixLamboChasis = glm::rotate(modelMatrixLambo, glm::radians(anguloY), glm::cross(glm::vec3(0.0, 0.0, 1.0), normalY));
 		modelMatrixLamboChasis = glm::scale(modelMatrixLamboChasis, glm::vec3(1.3, 1.3, 1.3));
 		modelLambo.render(modelMatrixLamboChasis);
 		glActiveTexture(GL_TEXTURE0);
-		glm::mat4 modelMatrixLamboLeftDor = glm::mat4(modelMatrixLamboChasis);
-		modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(1.08676, 0.707316, 0.982601));
-		modelMatrixLamboLeftDor = glm::rotate(modelMatrixLamboLeftDor, glm::radians(dorRotCount), glm::vec3(1.0, 0, 0));
-		modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(-1.08676, -0.707316, -0.982601));
-		modelLamboLeftDor.render(modelMatrixLamboLeftDor);
+		modelLamboLeftDor.render(modelMatrixLamboChasis);
 		modelLamboRightDor.render(modelMatrixLamboChasis);
 		modelLamboFrontLeftWheel.render(modelMatrixLamboChasis);
 		modelLamboFrontRightWheel.render(modelMatrixLamboChasis);
@@ -1042,6 +1127,44 @@ void applicationLoop() {
 		modelLamboRearRightWheel.render(modelMatrixLamboChasis);
 		// Se regresa el cull faces IMPORTANTE para las puertas
 		glEnable(GL_CULL_FACE);
+
+		shaderMulLighting.setInt("pointLightCount", faroPosition.size());
+		shaderTerrain.setInt("pointLightCount", faroPosition.size());
+		for (int i = 0; i < faroPosition.size(); i++) {
+
+			glm::mat4 matrixAdjustFaro = glm::mat4(1.0f);
+			matrixAdjustFaro = glm::translate(modelMatrixLamboChasis, faroPosition[i]);
+			
+			matrixAdjustFaro = glm::scale(matrixAdjustFaro, glm::vec3(1.0, 1.0, 1.0));
+			matrixAdjustFaro = glm::translate(matrixAdjustFaro, glm::vec3(0, 2.5, 0));
+			glm::vec3 faroPosition = glm::vec3(matrixAdjustFaro[3]);
+
+			shaderMulLighting.setInt("spotLightCount", 2);
+			shaderTerrain.setInt("spotLightCount", 2);
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.specular", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].position", glm::value_ptr(faroPosition));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].direction", glm::value_ptr(glm::vec3(0, -1, 1)));
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].constant", 1);
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].linear", 0.074);
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].quadratic", 0.03);
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].cutOff", cos(glm::radians(6.5)));
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].outerCutOff", cos(glm::radians(10.5)));
+
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.specular", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].position", glm::value_ptr(faroPosition));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].direction", glm::value_ptr(glm::vec3(0, -1, 1)));
+			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].constant", 1);
+			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].linear", 0.074);
+			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].quadratic", 0.03);
+			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].cutOff", cos(glm::radians(6.5)));
+			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].outerCutOff", cos(glm::radians(10.5)));
+
+		}
+
 
 		// Render the lamps
 		for (int i = 0; i < lamp1Position.size(); i++){
@@ -1051,6 +1174,19 @@ void applicationLoop() {
 			modelLamp1.setOrientation(glm::vec3(0, lamp1Orientation[i], 0));
 			modelLamp1.render();
 		}
+
+		for (int i = 0; i < lamp2Position.size(); i++) {
+			lamp2Position[i].y = terrain.getHeightTerrain(lamp2Position[i].x, lamp2Position[i].z);
+			modelLamp2.setPosition(lamp2Position[i]);
+			modelLamp2.setScale(glm::vec3(1.0, 1.0, 1.0));
+			modelLamp2.setOrientation(glm::vec3(0, lamp2Orientation[i], 0));
+			modelLamp2.render();
+			modelLampPost2.setPosition(lamp2Position[i]);
+			modelLampPost2.setScale(glm::vec3(1.0, 1.0, 1.0));
+			modelLampPost2.setOrientation(glm::vec3(0, lamp2Orientation[i], 0));
+			modelLampPost2.render();
+		}
+
 
 		// Dart lego
 		// Se deshabilita el cull faces IMPORTANTE para la capa

@@ -86,8 +86,9 @@ Model cowboyModelAnimate;
 //Modelo EVA Unit 01
 Model evaU1Animated;
 
-// Terrain model instance       -1,-1 Coordenadas donde se acomodan, cuadrantes.     200 subdivisiones.
-Terrain terrain(-1, -1, 200, 8, "../Textures/HeighMap1.png");
+// Terrain model instance 
+// -1,-1 Coordenadas donde se acomodan, cuadrantes.     200 subdivisiones.
+Terrain terrain(-1, -1, 200, 8, "../Textures/heightmap.png");
 
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
 GLuint skyboxTextureID;
