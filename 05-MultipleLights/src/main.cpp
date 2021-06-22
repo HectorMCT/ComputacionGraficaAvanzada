@@ -83,6 +83,7 @@ Model modelDartLegoRightLeg;
 Model modelLamp1;
 Model modelLamp2;
 Model modelLampPost2;
+Model streetLight;
 // Model animate instance
 // Mayow
 Model mayowModelAnimate;
@@ -159,9 +160,12 @@ std::vector<float> lamp1Orientation = { -17.0, -82.67, 23.70, -31.80 };
 std::vector<glm::vec3> lamp2Position = { glm::vec3(-36.52, 0, -23.24),
 		glm::vec3(-52.73, 0, -3.90) };
 std::vector<float> lamp2Orientation = {21.37 + 90, -65.0 + 90};
-
 std::vector<glm::vec3> faroPosition = { glm::vec3(0.7489, 0.6581, 2.31975),
 		 glm::vec3(-0.7489, 0.6581, 2.31975) };
+
+std::vector<glm::vec3> streetPosition = { glm::vec3(-19.03, 0, -10.14), glm::vec3(
+		-32.03, 0, -17.57), glm::vec3(-54.03, 0, -12.10), glm::vec3(-72.03,0,-0.97) };
+std::vector<float> streetOrientation = { -17.0, -62.67, 23.70, 31.80 };
 
 double deltaTime;
 double currTime, lastTime;
@@ -298,6 +302,8 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	modelLamp2.setShader(&shaderMulLighting);
 	modelLampPost2.loadModel("../models/Street_Light/LampPost.obj");
 	modelLampPost2.setShader(&shaderMulLighting);
+	streetLight.loadModel("../models/StreetLight.fbx");
+	streetLight.setShader(&shaderMulLighting);
 
 	//Mayow
 	mayowModelAnimate.loadModel("../models/mayow/personaje2.fbx");
@@ -697,6 +703,7 @@ void destroy() {
 	modelLamp1.destroy();
 	modelLamp2.destroy();
 	modelLampPost2.destroy();
+	streetLight.destroy();
 
 	// Custom objects animate
 	mayowModelAnimate.destroy();
@@ -1128,22 +1135,19 @@ void applicationLoop() {
 		// Se regresa el cull faces IMPORTANTE para las puertas
 		glEnable(GL_CULL_FACE);
 
-		shaderMulLighting.setInt("pointLightCount", faroPosition.size());
-		shaderTerrain.setInt("pointLightCount", faroPosition.size());
+		shaderMulLighting.setInt("spotLightCount", faroPosition.size() + streetPosition.size());
+		shaderTerrain.setInt("spotLightCount", faroPosition.size() + streetPosition.size());
 		for (int i = 0; i < faroPosition.size(); i++) {
 
 			glm::mat4 matrixAdjustFaro = glm::mat4(1.0f);
 			matrixAdjustFaro = glm::translate(modelMatrixLamboChasis, faroPosition[i]);
 			matrixAdjustFaro = glm::scale(matrixAdjustFaro, glm::vec3(1.0, 1.0, 1.0));
 			matrixAdjustFaro = glm::translate(matrixAdjustFaro, glm::vec3(0, 0.5, 0));
-			glm::vec3 faroPosition = glm::vec3(matrixAdjustFaro[3]);
-
-			shaderMulLighting.setInt("spotLightCount", 2);
-			shaderTerrain.setInt("spotLightCount", 2);
+			glm::vec3 faroPos = glm::vec3(matrixAdjustFaro[3]);
 			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
 			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
 			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.specular", glm::value_ptr(glm::vec3(0.2, 0.2, 0.7)));
-			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].position", glm::value_ptr(faroPosition));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].position", glm::value_ptr(faroPos));
 			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].direction", glm::value_ptr(faroDireccion));
 			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].constant", 1);
 			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].linear", 0.074);
@@ -1154,7 +1158,7 @@ void applicationLoop() {
 			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
 			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
 			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.specular", glm::value_ptr(glm::vec3(0.5, 0.7, 0.7)));
-			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].position", glm::value_ptr(faroPosition));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].position", glm::value_ptr(faroPos));
 			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].direction", glm::value_ptr(faroDireccion));
 			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].constant", 1);
 			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].linear", 0.074);
@@ -1164,6 +1168,46 @@ void applicationLoop() {
 
 		}
 
+		for (int i = 0; i < streetPosition.size(); i++) {
+
+			glm::mat4 matrixStreetFaro = glm::mat4(1.0f);
+			matrixStreetFaro = glm::translate(matrixStreetFaro, streetPosition[i]);
+			//matrixStreetFaro = glm::rotate(matrixStreetFaro, glm::radians(streetOrientation[i]), glm::vec3(0, 1, 0));
+			matrixStreetFaro = glm::scale(matrixStreetFaro, glm::vec3(1.0, 1.0, 1.0));
+			matrixStreetFaro = glm::translate(matrixStreetFaro, glm::vec3(0.000206, 6.39552, 1.90582));
+			glm::vec3 faroPos = glm::vec3(matrixStreetFaro[3]);
+
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].light.specular", glm::value_ptr(glm::vec3(052, 0.7, 0.7)));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].position", glm::value_ptr(faroPos));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].direction", glm::value_ptr(glm::vec3(0, -1.0, 0)));
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].constant", 1);
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].linear", 0.074);
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].quadratic", 0.03);
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].cutOff", cos(glm::radians(36.5)));
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].outerCutOff", cos(glm::radians(43.5)));
+
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].light.specular", glm::value_ptr(glm::vec3(0.5, 0.7, 0.7)));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].position", glm::value_ptr(faroPos));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(faroPosition.size() + i) + "].direction", glm::value_ptr(glm::vec3(0, -1.0, 0)));
+			shaderTerrain.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].constant", 1);
+			shaderTerrain.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].linear", 0.074);
+			shaderTerrain.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].quadratic", 0.03);
+			shaderTerrain.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].cutOff", cos(glm::radians(36.5)));
+			shaderTerrain.setFloat("spotLights[" + std::to_string(faroPosition.size() + i) + "].outerCutOff", cos(glm::radians(43.5)));
+
+		}
+
+		for (int i = 0; i < streetPosition.size(); i++) {
+			streetPosition[i].y = terrain.getHeightTerrain(streetPosition[i].x, streetPosition[i].z);
+			streetLight.setPosition(streetPosition[i]);
+			streetLight.setScale(glm::vec3(1.0, 1.0, 1.0));
+			streetLight.setOrientation(glm::vec3(0, streetOrientation[i], 0));
+			streetLight.render();
+		}
 
 		// Render the lamps
 		for (int i = 0; i < lamp1Position.size(); i++){
