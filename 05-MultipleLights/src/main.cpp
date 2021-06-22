@@ -902,7 +902,7 @@ void applicationLoop() {
 
 	modelMatrixAircraft = glm::translate(modelMatrixAircraft, glm::vec3(10.0, 2.0, -17.5));
 
-	modelMatrixLambo = glm::translate(modelMatrixLambo, glm::vec3(23.0, 0.0, 0.0));
+	modelMatrixLambo = glm::translate(modelMatrixLambo, glm::vec3(-5.0, 0.0, -10.0));
 
 	modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(3.0, 0.0, 20.0));
 
@@ -1113,9 +1113,9 @@ void applicationLoop() {
 		glDisable(GL_CULL_FACE);
 		modelMatrixLambo[3][1] = terrain.getHeightTerrain(modelMatrixLambo[3][0], modelMatrixLambo[3][2]);
 		glm::mat4 modelMatrixLamboChasis = glm::mat4(modelMatrixLambo);
-		glm::vec3 normalY = terrain.getNormalTerrain(modelMatrixLambo[3][0], modelMatrixLambo[3][2]);
-		//float anguloRot = glm::acos(glm::dot(normalY, glm::vec3(0.0, 1.0, 0.0)) / (glm::length(normalY) * glm::length(glm::vec3(0.0, 1.0, 0.0))));
-		modelMatrixLamboChasis = glm::rotate(modelMatrixLambo, glm::radians(anguloY), glm::cross(glm::vec3(0.0, 0.0, 1.0), normalY));
+		modelMatrixLamboChasis = glm::rotate(modelMatrixLambo, glm::radians(-anguloY), glm::vec3(0.0, 1.0, 0.0));
+		glm::vec3 faroDireccion = normalize(glm::vec3(glm::inverse(modelMatrixLamboChasis)[2]) + glm::vec3(0,-0.3,0));
+		modelMatrixLamboChasis = glm::rotate(modelMatrixLambo, glm::radians(anguloY), glm::vec3(0.0, 1.0, 0.0));
 		modelMatrixLamboChasis = glm::scale(modelMatrixLamboChasis, glm::vec3(1.3, 1.3, 1.3));
 		modelLambo.render(modelMatrixLamboChasis);
 		glActiveTexture(GL_TEXTURE0);
@@ -1134,34 +1134,33 @@ void applicationLoop() {
 
 			glm::mat4 matrixAdjustFaro = glm::mat4(1.0f);
 			matrixAdjustFaro = glm::translate(modelMatrixLamboChasis, faroPosition[i]);
-			
 			matrixAdjustFaro = glm::scale(matrixAdjustFaro, glm::vec3(1.0, 1.0, 1.0));
-			matrixAdjustFaro = glm::translate(matrixAdjustFaro, glm::vec3(0, 2.5, 0));
+			matrixAdjustFaro = glm::translate(matrixAdjustFaro, glm::vec3(0, 0.5, 0));
 			glm::vec3 faroPosition = glm::vec3(matrixAdjustFaro[3]);
 
 			shaderMulLighting.setInt("spotLightCount", 2);
 			shaderTerrain.setInt("spotLightCount", 2);
 			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
 			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
-			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.specular", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.specular", glm::value_ptr(glm::vec3(0.2, 0.2, 0.7)));
 			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].position", glm::value_ptr(faroPosition));
-			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].direction", glm::value_ptr(glm::vec3(0, -1, 1)));
+			shaderMulLighting.setVectorFloat3("spotLights[" + std::to_string(i) + "].direction", glm::value_ptr(faroDireccion));
 			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].constant", 1);
 			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].linear", 0.074);
 			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].quadratic", 0.03);
 			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].cutOff", cos(glm::radians(6.5)));
-			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].outerCutOff", cos(glm::radians(10.5)));
+			shaderMulLighting.setFloat("spotLights[" + std::to_string(i) + "].outerCutOff", cos(glm::radians(13.5)));
 
 			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
 			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
-			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.specular", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].light.specular", glm::value_ptr(glm::vec3(0.5, 0.7, 0.7)));
 			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].position", glm::value_ptr(faroPosition));
-			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].direction", glm::value_ptr(glm::vec3(0, -1, 1)));
+			shaderTerrain.setVectorFloat3("spotLights[" + std::to_string(i) + "].direction", glm::value_ptr(faroDireccion));
 			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].constant", 1);
 			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].linear", 0.074);
 			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].quadratic", 0.03);
 			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].cutOff", cos(glm::radians(6.5)));
-			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].outerCutOff", cos(glm::radians(10.5)));
+			shaderTerrain.setFloat("spotLights[" + std::to_string(i) + "].outerCutOff", cos(glm::radians(13.5)));
 
 		}
 
