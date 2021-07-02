@@ -55,6 +55,7 @@ Shader shaderMulLighting;
 Shader shaderTerrain;
 
 std::shared_ptr<Camera> camera(new ThirdPersonCamera());
+std::shared_ptr<FirstPersonCamera> cameraPrimPers(new FirstPersonCamera());
 
 Sphere skyboxSphere(20, 20);
 
@@ -87,8 +88,11 @@ Model modelLampPost2;
 // Model animate instance
 // Mayow
 Model mayowModelAnimate;
+//Modelo EVA Unit 01
+Model evaU1Animated;
+
 // Terrain model instance
-Terrain terrain(-1, -1, 200, 8, "../Textures/heightmap.png");
+Terrain terrain(-1, -1, 200, 8, "../Textures/HeighMap1.png");
 
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
 GLuint textureTerrainBackgroundID, textureTerrainRID, textureTerrainGID, textureTerrainBID, textureTerrainBlendMapID;
@@ -120,10 +124,14 @@ glm::mat4 modelMatrixLambo = glm::mat4(1.0);
 glm::mat4 modelMatrixAircraft = glm::mat4(1.0);
 glm::mat4 modelMatrixDart = glm::mat4(1.0f);
 glm::mat4 modelMatrixMayow = glm::mat4(1.0f);
+glm::mat4 modelMatrixEva01 = glm::mat4(1.0f);
 
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 int modelSelected = 2;
 bool enableCountSelected = true;
+
+int animeIndexEva = 0;
+float anguloY = 0.0;
 
 // Variables to animations keyframes
 bool saveFrame = false, availableSave = true;
@@ -162,8 +170,9 @@ std::vector<float> lamp2Orientation = {21.37 + 90, -65.0 + 90};
 
 double deltaTime;
 double currTime, lastTime;
-float distanceFromTarget = 6.0f;
+float distanceFromTarget = 18.0f;
 int animationIndex = 1;
+int camaraSelection = true;
 
 // Se definen todos las funciones.
 void reshapeCallback(GLFWwindow *Window, int widthRes, int heightRes);
@@ -304,6 +313,11 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	mayowModelAnimate.loadModel("../models/mayow/personaje2.fbx");
 	mayowModelAnimate.setShader(&shaderMulLighting);
 
+	//EVA 01
+	evaU1Animated.loadModel("../models/Eva/Eva01_Comp.fbx");
+	evaU1Animated.setShader(&shaderMulLighting);
+
+	cameraPrimPers->setPosition(glm::vec3(0.0, 0.0, -10.0));
 	camera->setPosition(glm::vec3(0.0, 0.0, 10.0));
 	camera->setDistanceFromTarget(distanceFromTarget);
 	camera->setSensitivity(1.0);
@@ -498,7 +512,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureLandingPad.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainBackground("../Textures/grassy2.png");
+	Texture textureTerrainBackground("../Textures/snowGrassy.jpg");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainBackground.loadImage();
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -530,7 +544,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureTerrainBackground.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainR("../Textures/mud.png");
+	Texture textureTerrainR("../Textures/snowTexture.jpg");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainR.loadImage();
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -562,7 +576,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureTerrainR.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainG("../Textures/grassFlowers.png");
+	Texture textureTerrainG("../Textures/grassSnow.jpg");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainG.loadImage();
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -594,7 +608,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureTerrainG.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainB("../Textures/path.png");
+	Texture textureTerrainB("../Textures/pathTexture.jpg");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainB.loadImage();
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -626,7 +640,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	textureTerrainB.freeImage(bitmap);
 
 	// Definiendo la textura a utilizar
-	Texture textureTerrainBlendMap("../Textures/blendMap.png");
+	Texture textureTerrainBlendMap("../Textures/blendMap_N.png");
 	// Carga el mapa de bits (FIBITMAP es el tipo de dato de la libreria)
 	bitmap = textureTerrainBlendMap.loadImage(true);
 	// Convertimos el mapa de bits en un arreglo unidimensional de tipo unsigned char
@@ -703,6 +717,7 @@ void destroy() {
 
 	// Custom objects animate
 	mayowModelAnimate.destroy();
+	evaU1Animated.destroy();
 
 	// Textures Delete
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -773,10 +788,28 @@ bool processInput(bool continueApplication) {
 		return false;
 	}
 
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		camera->mouseMoveCamera(offsetX, 0.0, deltaTime);
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-		camera->mouseMoveCamera(0.0, offsetY, deltaTime);
+	if (camaraSelection) // Camara Tercera Persona
+	{
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+			camera->mouseMoveCamera(offsetX, 0.0, deltaTime);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+			camera->mouseMoveCamera(0.0, offsetY, deltaTime);
+	}
+	else // Camara Primera Persona
+	{
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			cameraPrimPers->moveFrontCamera(true, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			cameraPrimPers->moveFrontCamera(false, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			cameraPrimPers->moveRightCamera(false, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			cameraPrimPers->moveRightCamera(true, deltaTime);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+			cameraPrimPers->mouseMoveCamera(offsetX, offsetY, deltaTime);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+			cameraPrimPers->mouseMoveCamera(offsetX, offsetY, deltaTime);
+	}
 	offsetX = 0;
 	offsetY = 0;
 
@@ -784,7 +817,7 @@ bool processInput(bool continueApplication) {
 	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS){
 		enableCountSelected = false;
 		modelSelected++;
-		if(modelSelected > 2)
+		if(modelSelected > 3)
 			modelSelected = 0;
 		if(modelSelected == 1)
 			fileName = "../animaciones/animation_dart_joints.txt";
@@ -885,6 +918,41 @@ bool processInput(bool continueApplication) {
 		animationIndex = 0;
 	}
 
+	// Rotación a la izquierda y rotación hacia donde se avanza
+	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+		anguloY += 0.5f;
+		animeIndexEva = 1;
+		modelMatrixEva01 = glm::rotate(modelMatrixEva01, 0.02f, glm::vec3(0, 1, 0));
+	} // Rotación a la derecha y rotación hacia donde se retrocede
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		anguloY -= 0.5f;
+		animeIndexEva = 1;
+		modelMatrixEva01 = glm::rotate(modelMatrixEva01, -0.02f, glm::vec3(0, 1, 0));
+	} //Desplazamiento hacia en frente
+	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		animeIndexEva = 1;
+		modelMatrixEva01 = glm::translate(modelMatrixEva01, glm::vec3(0.0, 0.0, 0.02));
+	} //Desplazamiento hacia atras
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		modelMatrixEva01 = glm::translate(modelMatrixEva01, glm::vec3(0.0, 0.0, -0.02));
+		animeIndexEva = 1;
+	}
+	else {
+		animeIndexEva = 2;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+	{
+		if (camaraSelection) //Pasa a Prime Persona
+		{
+			camaraSelection = false;
+		}
+		else // Pasa a Tercera Persona
+		{
+			camaraSelection = true;
+		}
+	}
+
 	glfwPollEvents();
 	return continueApplication;
 }
@@ -909,6 +977,8 @@ void applicationLoop() {
 
 	modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(13.0f, 0.05f, -5.0f));
 	modelMatrixMayow = glm::rotate(modelMatrixMayow, glm::radians(-90.0f), glm::vec3(0, 1, 0));
+
+	modelMatrixEva01 = glm::translate(modelMatrixEva01, glm::vec3(10.0, 0.0, -10.0));
 
 	// Variables to interpolation key frames
 	fileName = "../animaciones/animation_dart_joints.txt";
@@ -946,6 +1016,11 @@ void applicationLoop() {
 			angleTarget = glm::angle(glm::quat_cast(modelMatrixMayow));
 			target = modelMatrixMayow[3];
 		}
+		else if (modelSelected == 3) {
+			axis = glm::axis(glm::quat_cast(modelMatrixEva01));
+			angleTarget = glm::angle(glm::quat_cast(modelMatrixEva01));
+			target = modelMatrixEva01[3];
+		}
 
 		if (std::isnan(angleTarget))
 			angleTarget = 0.0;
@@ -957,8 +1032,14 @@ void applicationLoop() {
 		camera->setCameraTarget(target);
 		camera->setAngleTarget(angleTarget);
 		camera->updateCamera();
-		view = camera->getViewMatrix();
 
+		if (camaraSelection) { // Tercera Persona
+			view = camera->getViewMatrix();
+		}
+		else { // Primera persona
+
+			view = cameraPrimPers->getViewMatrix();
+		}
 		// Settea la matriz de vista y projection al shader con solo color
 		shader.setMatrix4("projection", 1, false, glm::value_ptr(projection));
 		shader.setMatrix4("view", 1, false, glm::value_ptr(view));
@@ -1221,6 +1302,26 @@ void applicationLoop() {
 		modelMatrixMayowBody = glm::scale(modelMatrixMayowBody, glm::vec3(0.021, 0.021, 0.021));
 		mayowModelAnimate.setAnimationIndex(animationIndex);
 		mayowModelAnimate.render(modelMatrixMayowBody);
+
+		/*************************************
+		* Modelo EVA 01
+		***********************************/
+		// Se ajusta el modelo a la altura del terreno
+		modelMatrixEva01[3][1] = terrain.getHeightTerrain(modelMatrixEva01[3][0], modelMatrixEva01[3][2]);
+		glm::mat4 modelMatrixEva01Body = glm::mat4(modelMatrixEva01);
+		modelMatrixEva01Body = glm::scale(modelMatrixEva01Body, glm::vec3(0.025, 0.025, 0.025));
+		// Obtenemos la normal del eje Y con respecto al terreno
+		glm::vec3 normalY = terrain.getNormalTerrain(modelMatrixEva01[3][0], modelMatrixEva01[3][2]);
+		// Angulo de inclinación para que la matriz quede ortogonal
+		float anguloRot = glm::acos(glm::dot(normalY, glm::vec3(0.0, 1.0, 0.0)) /
+			(glm::length(normalY) * glm::length(glm::vec3(0.0, 1.0, 0.0))));
+		// Rotación de modelo con respecto al angulo de inclinación y la dirección generada a partir de 
+		//los vectores de la normal y el unitario en Y
+		modelMatrixEva01Body = glm::rotate(modelMatrixEva01Body, anguloRot,
+			glm::cross(glm::vec3(0.0, 1.0, 0.0), normalY));
+		//Animacion EVA
+		evaU1Animated.setAnimationIndex(animeIndexEva);
+		evaU1Animated.render(modelMatrixEva01Body);
 
 		/*******************************************
 		 * Skybox
