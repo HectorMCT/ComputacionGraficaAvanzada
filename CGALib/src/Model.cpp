@@ -20,7 +20,7 @@ Model::Model() {
 }
 
 Model::~Model() {
-	for (GLuint i = 0; i < this->meshes.size(); i++){
+	for (GLuint i = 0; i < this->meshes.size(); i++) {
 		delete this->meshes[i]->bones;
 		delete this->meshes[i];
 	}
@@ -36,9 +36,9 @@ void Model::render(glm::mat4 parentTrans) {
 		this->meshes[i]->setPosition(this->getPosition());
 		this->meshes[i]->setScale(this->getScale());
 		this->meshes[i]->setOrientation(this->getOrientation());
-		if(scene->mNumAnimations > 0){
+		if (scene->mNumAnimations > 0) {
 			this->meshes[i]->bones->setAnimationIndex(this->animationIndex);
-			if(this->meshes[i]->bones != nullptr){
+			if (this->meshes[i]->bones != nullptr) {
 				shader_ptr->setInt("numBones", this->meshes[i]->bones->getNumBones());
 				std::vector<glm::mat4> transforms;
 				this->meshes[i]->bones->bonesTransform(runningTime, transforms, scene);
@@ -46,7 +46,7 @@ void Model::render(glm::mat4 parentTrans) {
 					std::stringstream ss;
 					ss << "bones[" << j << "]";
 					shader_ptr->setMatrix4(ss.str(), 1, GL_FALSE,
-							glm::value_ptr(m_GlobalInverseTransform * transforms[j]));
+						glm::value_ptr(m_GlobalInverseTransform * transforms[j]));
 				}
 			}
 			else
@@ -58,23 +58,23 @@ void Model::render(glm::mat4 parentTrans) {
 	}
 }
 
-void Model::loadModel(const std::string & path) {
+void Model::loadModel(const std::string& path) {
 	// Lee el archivo via ASSIMP
 	scene = importer.ReadFile(path.c_str(),
-			aiProcess_Triangulate | aiProcess_FlipUVs
-					| aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
+		aiProcess_Triangulate | aiProcess_FlipUVs
+		| aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
 	// Revisa errores
 	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE
-			|| !scene->mRootNode) // if is Not Zero
-			{
+		|| !scene->mRootNode) // if is Not Zero
+	{
 		std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString()
-				<< std::endl;
+			<< std::endl;
 		return;
 	}
 
 	CopyMat(scene->mRootNode->mTransformation, this->m_GlobalInverseTransform);
 	this->m_GlobalInverseTransform = glm::inverse(
-			this->m_GlobalInverseTransform);
+		this->m_GlobalInverseTransform);
 
 	// Recupera el path del directorio del archivo.
 	this->directory = path.substr(0, path.find_last_of('/'));
@@ -84,15 +84,22 @@ void Model::loadModel(const std::string & path) {
 
 	// Se crea la SBB
 	this->sbb.c = glm::vec3((this->aabb.mins.x + this->aabb.maxs.x) / 2.0f,
-			(this->aabb.mins.y + this->aabb.maxs.y) / 2.0f,
-			(this->aabb.mins.z + this->aabb.maxs.z) / 2.0f);
-	this->sbb.ratio = sqrt(
+		(this->aabb.mins.y + this->aabb.maxs.y) / 2.0f,
+		(this->aabb.mins.z + this->aabb.maxs.z) / 2.0f);
+	/*this->sbb.ratio = sqrt(
 			pow(this->aabb.mins.x - this->aabb.maxs.x, 2)
 					+ pow(this->aabb.mins.y - this->aabb.maxs.y, 2)
 					+ pow(this->aabb.mins.z - this->aabb.maxs.z, 2)) / 2.0f;
+	*/
 
+	float disX = this->aabb.maxs.x - this->aabb.mins.x;
+	float disY = this->aabb.maxs.y - this->aabb.mins.y;
+	float disZ = this->aabb.maxs.z - this->aabb.mins.z;
+	float maxDis = std::max(disX, disY);
+	maxDis = std::max(maxDis, disZ);
+	this->sbb.ratio = maxDis / 2.0f;
 
-	// Se crea la obb
+	
 	this->obb.c = this->sbb.c;
 	/*this->obb.e.x = aabb.maxs.x - aabb.mins.x;
 	this->obb.e.y = aabb.maxs.y - aabb.mins.y;
@@ -105,8 +112,8 @@ void Model::processNode(aiNode* node, const aiScene* scene) {
 	// Procesa cada maya del nodo actual
 	for (GLuint i = 0; i < node->mNumMeshes; i++) {
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		Mesh * meshModel = this->processMesh(mesh, scene);
-		Bones * bones = new Bones(meshModel->getVAO(), mesh->mNumVertices);
+		Mesh* meshModel = this->processMesh(mesh, scene);
+		Bones* bones = new Bones(meshModel->getVAO(), mesh->mNumVertices);
 		bones->loadBones(i, mesh);
 		meshModel->bones = bones;
 		this->meshes.push_back(meshModel);
@@ -116,7 +123,7 @@ void Model::processNode(aiNode* node, const aiScene* scene) {
 	}
 }
 
-Mesh * Model::processMesh(aiMesh* mesh, const aiScene* scene) {
+Mesh* Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 	std::vector<AbstractModel::Vertex> vertices;
 	std::vector<GLuint> indices;
 	std::vector<Texture*> textures;
@@ -158,7 +165,8 @@ Mesh * Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 			vec.x = mesh->mTextureCoords[0][i].x;
 			vec.y = mesh->mTextureCoords[0][i].y;
 			vertex.m_tex = vec;
-		} else
+		}
+		else
 			vertex.m_tex = glm::vec2(0.0f, 0.0f);
 
 		vertices.push_back(vertex);
@@ -182,30 +190,30 @@ Mesh * Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 
 		// 1. Diffuse maps
 		std::vector<Texture*> diffuseMaps = this->loadMaterialTextures(material,
-				aiTextureType_DIFFUSE, "texture_diffuse");
+			aiTextureType_DIFFUSE, "texture_diffuse");
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 		// 2. Specular maps
 		std::vector<Texture*> specularMaps = this->loadMaterialTextures(material,
-				aiTextureType_SPECULAR, "texture_specular");
+			aiTextureType_SPECULAR, "texture_specular");
 		textures.insert(textures.end(), specularMaps.begin(),
-				specularMaps.end());
+			specularMaps.end());
 		// 3. Normal maps
 		std::vector<Texture*> normalMaps = this->loadMaterialTextures(material,
-				aiTextureType_NORMALS, "texture_normal");
+			aiTextureType_NORMALS, "texture_normal");
 		textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 		// 4. Height maps
 		std::vector<Texture*> heightMaps = this->loadMaterialTextures(material,
-				aiTextureType_HEIGHT, "texture_height");
+			aiTextureType_HEIGHT, "texture_height");
 		textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 	}
 
-	Mesh * meshModel = new Mesh(vertices, indices, textures);
+	Mesh* meshModel = new Mesh(vertices, indices, textures);
 	// Regresa la maya de un objeto creado de los datos extraidos.
 	return meshModel;
 }
 
 std::vector<Texture*> Model::loadMaterialTextures(aiMaterial* mat,
-		aiTextureType type, std::string typeName) {
+	aiTextureType type, std::string typeName) {
 	std::vector<Texture*> textures;
 	for (GLuint i = 0; i < mat->GetTextureCount(type); i++) {
 		aiString str;
@@ -222,7 +230,7 @@ std::vector<Texture*> Model::loadMaterialTextures(aiMaterial* mat,
 		if (!skip) {
 			std::string filename = std::string(str.C_Str());
 			filename = this->directory + '/' + filename;
-			Texture * texture = new Texture(GL_TEXTURE_2D, filename);
+			Texture* texture = new Texture(GL_TEXTURE_2D, filename);
 			texture->load();
 			texture->setType(typeName);
 			textures.push_back(texture);
@@ -232,6 +240,6 @@ std::vector<Texture*> Model::loadMaterialTextures(aiMaterial* mat,
 	return textures;
 }
 
-bool Model::rayPicking(glm::vec3 init, glm::vec3 end, glm::vec3 &intersection) {
+bool Model::rayPicking(glm::vec3 init, glm::vec3 end, glm::vec3& intersection) {
 	return false;
 }
